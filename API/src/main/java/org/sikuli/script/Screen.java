@@ -5,8 +5,7 @@
  */
 package org.sikuli.script;
 
-import java.awt.AWTException;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.util.Date;
 import org.sikuli.basics.Debug;
 import org.sikuli.basics.Settings;
@@ -106,7 +105,6 @@ public class Screen extends Region implements IScreen {
         nMonitor++;
       }
       Mouse.init();
-      Keys.init();
       if (getNumberScreens() > 1) {
         log(lvl, "initScreens: multi monitor mouse check");
         Location lnow = Mouse.at();
@@ -136,7 +134,7 @@ public class Screen extends Region implements IScreen {
 
   private static void setMouseRobot() {
     try {
-      if (globalRobot == null) {
+      if (globalRobot == null && !GraphicsEnvironment.isHeadless()) {
         globalRobot = new RobotDesktop();
       }
     } catch (AWTException e) {
@@ -146,7 +144,7 @@ public class Screen extends Region implements IScreen {
 
   private IRobot getMouseRobot() {
     setMouseRobot();
-    if (null == globalRobot) {
+    if (null == globalRobot && !GraphicsEnvironment.isHeadless()) {
       log(-1, "problem getting a java.awt.Robot");
       Sikulix.endError(999);
     }
@@ -247,10 +245,7 @@ public class Screen extends Region implements IScreen {
     initScreen();
   }
 
-  /**
-	 * <br>TODO: remove this method if it is not needed
-	 * @param scr
-   */
+  //TODO: remove this method if it is not needed
   public void initScreen(Screen scr) {
     updateSelf();
   }
@@ -640,8 +635,8 @@ public class Screen extends Region implements IScreen {
             continue;
           }
           Screen.getScreen(is).prompt = new OverlayCapturePrompt(Screen.getScreen(is));
-          Screen.getScreen(is).prompt.prompt(msg);
           Screen.getScreen(is).prompt.addObserver(captureObserver);
+          Screen.getScreen(is).prompt.prompt(msg);
         }
       }
     };
@@ -761,10 +756,4 @@ public class Screen extends Region implements IScreen {
             scrText, (int) r.getX(), (int) r.getY(),
             (int) r.getWidth(), (int) r.getHeight());
   }
-
-	@Override
-	public String toJSON() {
-    Rectangle r = getBounds();
-		return String.format("[\"S\", %d, %d, %d, %d, %d]", r.x, r.y, r.width, r.height, curID);
-	}
 }

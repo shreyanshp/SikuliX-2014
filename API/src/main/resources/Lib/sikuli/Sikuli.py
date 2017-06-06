@@ -18,6 +18,9 @@ import sys
 import os
 import inspect
 
+Debug.log(4, "Jython: sikuli: Sikuli: backports from Version 2: Do")
+import org.sikuli.script.Do as Do
+
 Debug.log(4, "Jython: sikuli: Sikuli: RunTime, Setting, Debug")
 import org.sikuli.script.RunTime as JRunTime
 
@@ -116,8 +119,6 @@ from org.sikuli.script import Mouse
 
 def at():
   return Mouse.at()
-
-from org.sikuli.script import Keys
 
 Debug.log(4, "Jython: sikuli: Sikuli: import from compare")
 from org.sikuli.script.compare import DistanceComparator
@@ -488,8 +489,11 @@ def useRemote(adr, port=0):
 # returns a VNCScreen object
 # use theVNCScreen.stop() to stop this connection again (auto-stopped at script end)
 
-def vncStart(ip="127.0.0.1", port=5900, connectionTimeout=10, timeout=1000):
-  return Sikulix.vncStart(ip, port, connectionTimeout, timeout)
+def useVnc(ip="127.0.0.1", port=5900, connectionTimeout=10, timeout=1000, password=None):
+  use(Sikulix.vncStart(ip, port, password, connectionTimeout, timeout), True)
+
+def vncStart(ip="127.0.0.1", port=5900, connectionTimeout=10, timeout=1000, password=None):
+  return Sikulix.vncStart(ip, port, password, connectionTimeout, timeout)
 
 ## ----------------------------------------------------------------------
 # Switches the frontmost application to the given application.

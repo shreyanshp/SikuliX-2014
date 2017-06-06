@@ -192,7 +192,6 @@ public class RobotDesktop extends Robot implements IRobot {
   @Override
   public void mouseDown(int buttons) {
     if (heldButtons != 0) {
-      Debug.error("mouseDown: buttons still pressed - using all", buttons, heldButtons);
       heldButtons |= buttons;
     } else {
       heldButtons = buttons;
@@ -350,6 +349,7 @@ public class RobotDesktop extends Robot implements IRobot {
   }
 
   private void doType(KeyMode mode, int... keyCodes) {
+    waitForIdle();
     if (mode == KeyMode.PRESS_ONLY) {
       for (int i = 0; i < keyCodes.length; i++) {
         doKeyPress(keyCodes[i]);
@@ -366,6 +366,7 @@ public class RobotDesktop extends Robot implements IRobot {
         doKeyRelease(keyCodes[i]);
       }
     }
+    waitForIdle();
   }
 
   @Override

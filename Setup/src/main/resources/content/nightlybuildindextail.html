@@ -5,6 +5,28 @@
   -->
 
 <h1>Changelog version 1.1.1</h1>
+<h4>Build: 2017-03-29</h4>
+<b>fixed:</b> findAll() should throw FindFailed according to docs and support FindFailed Response handling.
+<h4>Build: 2017-03-23</h4>
+<b>revised:</b> VNCScreen: scripts using only VNC can now be run on headless systems (Pepijn Van Eeckhoudt)
+<h4>Build: 2017-03-18</h4>
+<b>added:</b> backport from Version 2: class Do: timed autoclosing popup, popAsk, popError, input/input hidden<br>
+<a href="http://sikulix-2014.readthedocs.io/en/latest/interaction.html#popups-and-input-dialogs">see docs</a>
+<h4>Build: 2017-03-17</h4>
+<b>fixed:</b> VNC: class Key constants like Key.WIN were not supported / keyUp() used typeKey instead of typeCode
+<h4>Build: 2017-03-16</h4>
+<b>fixed:</b> IDE: recapture image: new file content not reflected (image cache not updated)<br>
+<b>revised:</b> VNCScreen: stop, close, stopAll: remove screen(s) from list.
+<h4>Build: 2017-03-14</h4>
+<b>revised:</b> complete rewrite of the VNC feature, now based on the TigerVNC viewer jar (great thanks to:
+<a href="https://github.com/pepijnve">Pepijn Van Eeckhoudt</a>)</br>
+<a href="http://sikulix-2014.readthedocs.io/en/latest/screen.html#connecting-to-a-vnc-server-vncscreen">Be sure to have read the docs!</a>
+<h4>Build: 2017-03-03</h4>
+<b>fixed:</b> removed irritating error message with multiple mouseDown()
+<h4>Build: 2017-02-25</h4>
+<b>fixed:</b> ADBDevice: tap, input and getDisplayDimension<br>
+<b>fixed:</b> Image.reload(image) did not work<br>
+<b>revised:</b> Runserver: pull/244 - various enhancements
 <h4>Build: 2016-12-10</h4>
 <b>fixed:</b> ImagePath: images not found at root level of jar
 <h4>Build: 2016-12-09</h4>

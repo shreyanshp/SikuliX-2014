@@ -5,7 +5,6 @@
  */
 package org.sikuli.script;
 
-import edu.unh.iol.dlc.VNCScreen;
 import java.awt.Rectangle;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -38,6 +37,7 @@ public class Region {
     Debug.logx(level, me + message, args);
   }
 
+  //<editor-fold desc="housekeeping">
   /**
    * The Screen containing the Region
    */
@@ -105,15 +105,6 @@ public class Region {
   private long lastSearchTimeRepeat = -1;
 
   /**
-   * in case of not found the total wait time
-   *
-   * @return the duration of the last find op
-   */
-  public long getLastTime() {
-    return lastFindTime;
-  }
-
-  /**
    * the area constants for use with get()
    */
   public static final int NW = 300, NORTH_WEST = NW, TL = NW;
@@ -165,6 +156,11 @@ public class Region {
             throwException ? "Y" : "N", autoWaitTimeout);
   }
 
+  /**
+   * INTERNAL USE ONLY
+   *
+   * @return text
+   */
   public String getIDString() {
     return "NonLocal";
   }
@@ -182,10 +178,7 @@ public class Region {
       return String.format("R[%d,%d %dx%d]@S(%s)", x, y, w, h, scrText);
     }
   }
-
-  public String toJSON() {
-    return String.format("[\"R\", %d, %d, %d, %d]", x, y, w, h);
-  }
+  //</editor-fold>
 
   //<editor-fold defaultstate="collapsed" desc="OFF: Specials for scripting environment">
   /*
@@ -209,12 +202,13 @@ public class Region {
    }
    */
   //</editor-fold>
+
   //<editor-fold defaultstate="collapsed" desc="Initialization">
+
   /**
-   * Detects on which Screen the Region is present. The region is cropped to the intersection with the given screen or
-   * the screen with the largest intersection
+   * INTERNAL USE
    *
-   * @param iscr The Screen containing the Region
+   * @param iscr screen
    */
   public void initScreen(IScreen iscr) {
     // check given screen first
@@ -253,13 +247,8 @@ public class Region {
     // crop to the screen with the largest intersection
     screenRect = new Rectangle(0, 0, 0, 0);
     screenOn = null;
-    boolean isVNC;
-    if (iscr == null) {
-      isVNC = scr instanceof VNCScreen;
-    } else {
-      isVNC = iscr instanceof VNCScreen;
-    }
-    if (!isVNC) {
+
+    if (scr == null || !scr.isOtherScreen()) {
       for (int i = 0; i < Screen.getNumberScreens(); i++) {
         screen = Screen.getScreen(i);
         rect = regionOnScreen(screen);
@@ -271,17 +260,15 @@ public class Region {
         }
       }
     } else {
-      for (int i = 0; i < VNCScreen.getNumberScreens(); i++) {
-        screen = VNCScreen.getScreen(i);
-        rect = regionOnScreen(screen);
-        if (rect != null) {
-          if (rect.width * rect.height > screenRect.width * screenRect.height) {
-            screenRect = rect;
-            screenOn = screen;
-          }
+      rect = regionOnScreen(scr);
+      if (rect != null) {
+        if (rect.width * rect.height > screenRect.width * screenRect.height) {
+          screenRect = rect;
+          screenOn = scr;
         }
       }
     }
+
     if (screenOn != null) {
       x = screenRect.x;
       y = screenRect.y;
@@ -302,6 +289,12 @@ public class Region {
     return loc.setOtherScreen(scr);
   }
 
+  /**
+   * INTERNAL USE - EXPERIMENTAL if true: this region is not bound to any screen
+   *
+   * @param rect rectangle
+   * @return the current state
+   */
   public static Region virtual(Rectangle rect) {
     Region reg = new Region();
     reg.x = rect.x;
@@ -347,6 +340,11 @@ public class Region {
     otherScreen = true;
   }
 
+  /**
+   * INTERNAL USE: flags this region as belonging to a non-Desktop screen
+   *
+   * @param aScreen screen
+   */
   public void setOtherScreen(IScreen aScreen) {
     scr = aScreen;
     setOtherScreen();
@@ -418,6 +416,16 @@ public class Region {
   }
 
   /**
+   * Convenience: a minimal Region to be used as a Point (backport from Version 2)<br>
+   * is always on primary screen
+   * @param X
+   * @param Y
+   */
+  public Region (int X, int Y) {
+    this(X, Y, 1, 1, null);
+  }
+
+  /**
    * Create a region with the provided coordinate / size
    *
    * @param X X position
@@ -450,7 +458,7 @@ public class Region {
     init(r);
   }
 
-  public void init(Region r) {
+  private void init(Region r) {
     if (!r.isValid()) {
       return;
     }
@@ -470,6 +478,7 @@ public class Region {
   }
 
   //</editor-fold>
+
   //<editor-fold defaultstate="collapsed" desc="Quasi-Constructors to be used in Java">
   /**
    * internal use only, used for new Screen objects to get the Region behavior
@@ -685,6 +694,7 @@ public class Region {
   }
 
   //</editor-fold>
+
   //<editor-fold defaultstate="collapsed" desc="handle coordinates">
   /**
    * check if current region contains given point
@@ -881,6 +891,7 @@ public class Region {
   }
 
   //</editor-fold>
+
   //<editor-fold defaultstate="collapsed" desc="getters / setters / modificators">
   /**
    *
@@ -1249,7 +1260,9 @@ public class Region {
    * @return the Region being the current ROI of the containing Screen
    */
   public Region getROI() {
-    return new Region(getScreen().getRect());
+    IScreen screen = getScreen();
+    Rectangle screenRect = screen.getRect();
+    return new Region(screenRect.x, screenRect.y, screenRect.width, screenRect.height, screen);
   }
 
   // ****************************************************
@@ -1351,7 +1364,9 @@ public class Region {
     initScreen(null);
     return this;
   }
+  //</editor-fold>
 
+  //<editor-fold desc="lastMatch">
   // ************************************************
   /**
    * a find operation saves its match on success in the used region object<br>unchanged if not successful
@@ -1370,6 +1385,20 @@ public class Region {
    */
   public Iterator<Match> getLastMatches() {
     return lastMatches;
+  }
+  //</editor-fold>
+
+  //<editor-fold desc="save capture to file">
+  public String saveScreenCapture() {
+    return getScreen().capture(this).save();
+  }
+
+  public String saveScreenCapture(String path) {
+    return getScreen().capture(this).save(path);
+  }
+
+  public String saveScreenCapture(String path, String name) {
+    return getScreen().capture(this).save(path, name);
   }
 
   // ************************************************
@@ -1415,7 +1444,14 @@ public class Region {
     return getScreen().getLastScreenImageFromScreen().getFile(path, name);
   }
 
+  public void saveLastScreenImage() {
+    ScreenImage simg = getScreen().getLastScreenImageFromScreen();
+    if (simg != null) {
+      simg.saveLastScreenImage(runTime.fSikulixStore);
+    }
+  }
   //</editor-fold>
+
   //<editor-fold defaultstate="collapsed" desc="spatial operators - new regions">
   /**
    * check if current region contains given region
@@ -1735,6 +1771,7 @@ public class Region {
   }
 
   //</editor-fold>
+
   //<editor-fold defaultstate="collapsed" desc="parts of a Region">
   /**
    * select the specified part of the region.
@@ -2175,7 +2212,6 @@ public class Region {
    * throw FindFailed to abort
    *
    * @param img Handles a failed find action
-   * @throws FindFailed
    */
   private <PSI> Boolean handleFindFailed(PSI target, Image img, boolean isExists) {
     log(lvl, "handleFindFailed: %s", target);
@@ -2419,7 +2455,7 @@ public class Region {
         runTime.abortScripting("FindAll: Abort:", "ImageMissing: " + target.toString());
       }
     }
-    if (null != response && response) {
+    while (null != response && response) {
       log(lvl, "findAll: waiting %.1f secs for (multiple) %s to appear in %s",
               autoWaitTimeout, targetStr, this.toStringShort());
       if (autoWaitTimeout > 0) {
@@ -2430,9 +2466,14 @@ public class Region {
       }
       if (lastMatches != null) {
         log(lvl, "findAll: %s has appeared", targetStr);
+        break;
       } else {
         log(lvl, "findAll: %s did not appear", targetStr);
+        response = handleFindFailed(target, img, false);
       }
+    }
+    if (null == response) {
+      throw new FindFailed(FindFailed.createdefault(this, img));
     }
     return lastMatches;
   }
@@ -2947,17 +2988,13 @@ public class Region {
     if (shouldCheckLastSeen) {
       Region r = Region.create(img.getLastSeen());
       if (this.contains(r)) {
-        Finder f = null;
-        if (this.scr instanceof VNCScreen) {
-          f = new Finder(new VNCScreen().capture(r), r);
-        } else {
-          f = new Finder(base.getSub(r.getRect()), r);
-          if (Debug.shouldHighlight()) {
-            if (this.scr.getW() > w + 10 && this.scr.getH() > h + 10) {
-              highlight(2, "#000255000");
-            }
+        Finder f = new Finder(base.getSub(r.getRect()), r);
+        if (Debug.shouldHighlight()) {
+          if (this.scr.getW() > w + 10 && this.scr.getH() > h + 10) {
+            highlight(2, "#000255000");
           }
         }
+
         if (ptn == null) {
           f.find(new Pattern(img).similar(score));
         } else {
@@ -2976,13 +3013,6 @@ public class Region {
       return f;
     } else {
       return new Finder(base, this);
-    }
-  }
-
-  public void saveLastScreenImage() {
-    ScreenImage simg = getScreen().getLastScreenImageFromScreen();
-    if (simg != null) {
-      simg.saveLastScreenImage(runTime.fSikulixStore);
     }
   }
 
@@ -3271,7 +3301,7 @@ public class Region {
   }
 
   /**
-   * set the observer with the given name active (not checked while observing)
+   * set the observer with the given name active (checked while observing)
    *
    * @param name observers name
    */
@@ -3589,7 +3619,7 @@ public class Region {
   //</editor-fold>
 
   //<editor-fold defaultstate="collapsed" desc="Mouse actions - clicking">
-  public Location checkMatch() {
+  protected Location checkMatch() {
     if (lastMatch != null) {
       return lastMatch.getTarget();
     }
@@ -4448,6 +4478,13 @@ public class Region {
     return false;
   }
 
+  /**
+   * EXPERIMENTAL: for Android over ADB
+   *
+   * @param <PFRML> Pattern, String, Image, Match, Region or Location
+   * @param target PFRML
+   * @throws FindFailed image not found
+   */
   public <PFRML> void aTap(PFRML target) throws FindFailed {
     if (isAndroid() && adbDevice != null) {
       Location loc = getLocationFromTarget(target);
@@ -4458,18 +4495,36 @@ public class Region {
     }
   }
 
+  /**
+   * EXPERIMENTAL: for Android over ADB
+   *
+   * @param text text
+   */
   public void aInput(String text) {
     if (isAndroid() && adbDevice != null) {
       adbDevice.input(text);
     }
   }
 
+  /**
+   * EXPERIMENTAL: for Android over ADB
+   *
+   * @param key key
+   */
   public void aKey(int key) {
     if (isAndroid() && adbDevice != null) {
       adbDevice.inputKeyEvent(key);
     }
   }
 
+  /**
+   * EXPERIMENTAL: for Android over ADB
+   *
+   * @param <PFRML> Pattern, String, Image, Match, Region or Location
+   * @param from PFRML
+   * @param to PFRML
+   * @throws FindFailed image not found
+   */
   public <PFRML> void aSwipe(PFRML from, PFRML to) throws FindFailed {
     if (isAndroid() && adbDevice != null) {
       Location locFrom = getLocationFromTarget(from);
@@ -4481,6 +4536,9 @@ public class Region {
     }
   }
 
+  /**
+   * EXPERIMENTAL: for Android over ADB
+   */
   public void aSwipeUp() {
     int midX = (int) (w/2);
     int swipeStep = (int) (h/5);
@@ -4490,6 +4548,9 @@ public class Region {
     }
   }
 
+  /**
+   * EXPERIMENTAL: for Android over ADB
+   */
   public void aSwipeDown() {
     int midX = (int) (w/2);
     int swipeStep = (int) (h/5);
@@ -4499,6 +4560,9 @@ public class Region {
     }
   }
 
+  /**
+   * EXPERIMENTAL: for Android over ADB
+   */
   public void aSwipeLeft() {
     int midY = (int) (h/2);
     int swipeStep = (int) (w/5);
@@ -4508,6 +4572,9 @@ public class Region {
     }
   }
 
+  /**
+   * EXPERIMENTAL: for Android over ADB
+   */
   public void aSwipeRight() {
     int midY = (int) (h/2);
     int swipeStep = (int) (w/5);
@@ -4517,7 +4584,6 @@ public class Region {
     }
   }
   //</editor-fold>
-
 
   //<editor-fold defaultstate="collapsed" desc="OCR - read text from Screen">
   /**
@@ -4566,16 +4632,4 @@ public class Region {
     return null;
   }
   //</editor-fold>
-
-  public String saveScreenCapture() {
-    return getScreen().capture(this).save();
-  }
-
-  public String saveScreenCapture(String path) {
-    return getScreen().capture(this).save(path);
-  }
-
-  public String saveScreenCapture(String path, String name) {
-    return getScreen().capture(this).save(path, name);
-  }
 }

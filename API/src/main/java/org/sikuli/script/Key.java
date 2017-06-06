@@ -267,7 +267,7 @@ public class Key {
 
   //<editor-fold defaultstate="collapsed" desc="KeyNames to UniCode (used in type() with Key.XXX)">
   public static final String SPACE = " ";
-  public static final String ENTER = "\n";
+  public static final String ENTER = "\r";
   public static final String BACKSPACE = "\b";
   public static final String TAB = "\t";
   public static final String ESC = "\u001b";
@@ -994,6 +994,13 @@ public class Key {
 //		}
 //	}
 
+  /**
+   * INTERNAL USE ONLY
+   *
+   * @param code keycode
+   * @param mod modifier
+   * @return readable key text
+   */
   public static String convertKeyToText(int code, int mod) {
     String txtMod = KeyEvent.getKeyModifiersText(mod);
     String txtCode = KeyEvent.getKeyText(code);
